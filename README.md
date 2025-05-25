@@ -2,6 +2,8 @@
 
 A React Native library that provides an elegant way to create interactive focus guides and tooltips. It allows you to highlight specific components and display tooltips with smooth animations, perfect for creating onboarding experiences, feature walkthroughs, and interactive tutorials in your React Native applications.
 
+![example-](https://github.com/user-attachments/assets/5c88928b-8440-473f-991b-8853895deb85)
+
 ## Features
 
 - 🔍 Highlight specific components with customizable overlay
