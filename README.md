@@ -78,6 +78,7 @@ The `HighlightToolTip` component accepts the following props:
 | `tooltipPosition` | `TooltipPosition`            | No       | 'bottom'         | Position of the tooltip relative to the target      |
 | `offset`          | `{ x?: number; y?: number }` | No       | `{ x: 0, y: 0 }` | Offset for tooltip positioning                      |
 | `allowOverlap`    | `boolean`                    | No       | `false`          | Whether to allow tooltip to overlap with the target |
+| `measureOffsetY`  | `number`                     | No       | `0`              | Y-axis offset for coordinate measurement correction |
 
 ### TooltipPosition Types
 
@@ -97,6 +98,30 @@ type TooltipPosition =
 ```
 
 ## Advanced Usage
+
+### Coordinate Measurement Correction
+
+If you notice that the highlight position is slightly off (especially on devices with status bars, notches, or navigation bars), you can use the `measureOffsetY` prop to correct the Y-axis positioning:
+
+```jsx
+<HighlightToolTip
+  targetRef={targetRef}
+  measureOffsetY={-24} // Adjust by -24px if highlight appears too low
+  tooltipPosition="bottom"
+  onRequestClose={() => setShowTooltip(false)}
+>
+  <View style={{ padding: 16, backgroundColor: 'white', borderRadius: 8 }}>
+    <Text>Perfectly positioned tooltip!</Text>
+  </View>
+</HighlightToolTip>
+```
+
+**Common scenarios where `measureOffsetY` is useful:**
+
+- Android devices with varying status bar heights
+- iOS devices with notches or Dynamic Island
+- Apps with custom navigation bars
+- Different screen densities and resolutions
 
 ### Custom Styling
 

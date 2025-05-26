@@ -7,7 +7,6 @@ import {
   UIManager,
   type LayoutRectangle,
   Dimensions,
-  Platform,
 } from 'react-native';
 
 type TooltipPosition =
@@ -30,7 +29,7 @@ type HighlightOverlayProps = {
   tooltipPosition?: TooltipPosition;
   offset?: { x?: number; y?: number };
   allowOverlap?: boolean;
-  androidOffsetY?: number;
+  measureOffsetY?: number;
 };
 
 export const HighlightToolTip: React.FC<HighlightOverlayProps> = ({
@@ -40,7 +39,7 @@ export const HighlightToolTip: React.FC<HighlightOverlayProps> = ({
   tooltipPosition = 'bottom',
   offset = { x: 0, y: 0 },
   allowOverlap = false,
-  androidOffsetY = 0,
+  measureOffsetY = 0,
 }) => {
   const [hole, setHole] = useState<LayoutRectangle | null>(null);
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -51,16 +50,15 @@ export const HighlightToolTip: React.FC<HighlightOverlayProps> = ({
     UIManager.measureInWindow(
       handle!,
       (x: number, y: number, width: number, height: number) => {
-        const isAndroid = Platform.OS === 'android';
         setHole({
           x,
-          y: isAndroid ? y + androidOffsetY : y,
+          y: y + measureOffsetY,
           width,
           height,
         });
       }
     );
-  }, [targetRef, androidOffsetY]);
+  }, [targetRef, measureOffsetY]);
 
   const getTooltipPosition = () => {
     if (!hole) return { top: 0, left: 0 };
