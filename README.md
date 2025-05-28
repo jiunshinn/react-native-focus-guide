@@ -130,7 +130,7 @@ You can customize the tooltip's appearance by wrapping your content in a styled 
 
 If you notice that the highlight position is slightly off on Android devices—often due to varying status-bar or navigation-bar heights—you can supply `androidOffsetY` to nudge the measured Y-coordinate.
 
-```jsx
+```tsx
 <HighlightToolTip
   targetRef={targetRef}
   androidOffsetY={-24} // moves the highlight 24px upward on Android
