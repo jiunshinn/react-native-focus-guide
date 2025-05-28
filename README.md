@@ -70,14 +70,15 @@ const App = () => {
 
 The `HighlightToolTip` component accepts the following props:
 
-| Prop              | Type                         | Required | Default          | Description                                         |
-| ----------------- | ---------------------------- | -------- | ---------------- | --------------------------------------------------- |
-| `targetRef`       | `React.RefObject`            | Yes      | -                | Reference to the component you want to highlight    |
-| `children`        | `React.ReactNode`            | Yes      | -                | Content to display in the tooltip                   |
-| `onRequestClose`  | `() => void`                 | Yes      | -                | Function called when the tooltip should be closed   |
-| `tooltipPosition` | `TooltipPosition`            | No       | 'bottom'         | Position of the tooltip relative to the target      |
-| `offset`          | `{ x?: number; y?: number }` | No       | `{ x: 0, y: 0 }` | Offset for tooltip positioning                      |
-| `allowOverlap`    | `boolean`                    | No       | `false`          | Whether to allow tooltip to overlap with the target |
+| Prop              | Type                         | Required | Default          | Description                                                         |
+| ----------------- | ---------------------------- | -------- | ---------------- | ------------------------------------------------------------------- |
+| `targetRef`       | `React.RefObject`            | Yes      | -                | Reference to the component you want to highlight                    |
+| `children`        | `React.ReactNode`            | Yes      | -                | Content to display in the tooltip                                   |
+| `onRequestClose`  | `() => void`                 | Yes      | -                | Function called when the tooltip should be closed                   |
+| `tooltipPosition` | `TooltipPosition`            | No       | 'bottom'         | Position of the tooltip relative to the target                      |
+| `offset`          | `{ x?: number; y?: number }` | No       | `{ x: 0, y: 0 }` | Offset for tooltip positioning                                      |
+| `allowOverlap`    | `boolean`                    | No       | `false`          | Whether to allow tooltip to overlap with the target                 |
+| `androidOffsetY`  | `number`                     | No       | `0`              | Y-axis offset applied on Android to correct coordinate misalignment |
 
 ### TooltipPosition Types
 
@@ -124,6 +125,26 @@ You can customize the tooltip's appearance by wrapping your content in a styled 
   </View>
 </HighlightToolTip>
 ```
+
+### Coordinate Measurement Correction (Android)
+
+If you notice that the highlight position is slightly off on Android devices—often due to varying status-bar or navigation-bar heights—you can supply `androidOffsetY` to nudge the measured Y-coordinate.
+
+```jsx
+<HighlightToolTip
+  targetRef={targetRef}
+  androidOffsetY={-24} // moves the highlight 24px upward on Android
+  tooltipPosition="bottom"
+  onRequestClose={() => setShowTooltip(false)}
+>
+  <View style={{ padding: 16, backgroundColor: 'white', borderRadius: 8 }}>
+    <Text>Perfectly positioned tooltip!</Text>
+  </View>
+</HighlightToolTip>
+```
+
+> **Tip**
+> Use positive values to push the highlight downward and negative values to pull it upward. On iOS this prop is ignored, so you can safely leave the same code across platforms.
 
 ## Contributing
 
