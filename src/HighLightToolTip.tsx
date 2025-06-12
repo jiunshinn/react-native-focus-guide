@@ -8,6 +8,8 @@ import {
   type LayoutRectangle,
   Dimensions,
   Platform,
+  type LayoutChangeEvent,
+  InteractionManager,
 } from 'react-native';
 
 type TooltipPosition =
@@ -43,38 +45,81 @@ export const HighlightToolTip: React.FC<HighlightOverlayProps> = ({
   androidOffsetY = 0,
 }) => {
   const [hole, setHole] = useState<LayoutRectangle | null>(null);
+  const [tooltipLayout, setTooltipLayout] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
   useEffect(() => {
-    if (!targetRef.current) return;
-    const handle = findNodeHandle(targetRef.current);
-    UIManager.measureInWindow(
-      handle!,
-      (x: number, y: number, width: number, height: number) => {
-        const isAndroid = Platform.OS === 'android';
-        setHole({
-          x,
-          y: isAndroid ? y + androidOffsetY : y,
-          width,
-          height,
-        });
+    const measure = (retryCount = 0) => {
+      if (!targetRef.current) {
+        if (retryCount < 5) {
+          setTimeout(() => measure(retryCount + 1), 100);
+        }
+        return;
       }
-    );
-  }, [targetRef, androidOffsetY]);
+      const handle = findNodeHandle(targetRef.current);
+      if (handle) {
+        UIManager.measureInWindow(handle, (x, y, width, height) => {
+          if (
+            [x, y, width, height].some(
+              (val) => typeof val !== 'number' || isNaN(val)
+            ) ||
+            (width === 0 && height === 0)
+          ) {
+            if (retryCount < 5) {
+              setTimeout(() => measure(retryCount + 1), 100);
+            } else {
+              console.warn(
+                'HighlightToolTip: Failed to measure target component after multiple retries.'
+              );
+              onRequestClose();
+            }
+            return;
+          }
+
+          const isAndroid = Platform.OS === 'android';
+          setHole({
+            x,
+            y: isAndroid ? y + androidOffsetY : y,
+            width,
+            height,
+          });
+        });
+      } else if (retryCount < 5) {
+        setTimeout(() => measure(retryCount + 1), 100);
+      } else {
+        console.warn(
+          'HighlightToolTip: Could not find node handle for targetRef after multiple retries.'
+        );
+        onRequestClose();
+      }
+    };
+
+    const interactionHandle = InteractionManager.runAfterInteractions(() => {
+      measure();
+    });
+
+    return () => interactionHandle.cancel();
+  }, [targetRef, androidOffsetY, onRequestClose]);
+
+  const onTooltipLayout = (event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    if (tooltipLayout?.width !== width || tooltipLayout?.height !== height) {
+      setTooltipLayout({ width, height });
+    }
+  };
 
   const getTooltipPosition = () => {
-    if (!hole) return { top: 0, left: 0 };
+    if (!hole || !tooltipLayout) {
+      return { top: 0, left: 0, opacity: 0 };
+    }
 
     const { x: offsetX = 0, y: offsetY = 0 } = offset;
-    // Adjust margin based on allowOverlap - use larger margin to prevent overlap
-    const margin = allowOverlap ? -4 : 24; // Negative margin when overlap is allowed, otherwise larger margin
+    const margin = allowOverlap ? -4 : 24;
+    const { width: tooltipWidth, height: tooltipHeight } = tooltipLayout;
 
-    // Calculate tooltip size dynamically based on screen size
-    const maxTooltipWidth = Math.min(screenWidth * 0.8, 320); // Max 80% of screen width or 320px
-    const tooltipWidth = maxTooltipWidth;
-    const tooltipHeight = 120; // Adjust to actual height + extra space
-
-    // Calculate initial position
     let calculatedPosition = { top: 0, left: 0 };
 
     switch (tooltipPosition) {
@@ -151,29 +196,18 @@ export const HighlightToolTip: React.FC<HighlightOverlayProps> = ({
         };
     }
 
-    // Check screen boundaries and auto-adjust
     let { top, left } = calculatedPosition;
-
-    // Fixed margin for screen boundary adjustment (always positive)
     const boundaryMargin = 16;
 
-    // Left boundary check
     if (left < boundaryMargin) {
       left = boundaryMargin;
     }
 
-    // Right boundary check - ensure tooltip doesn't extend beyond screen
     if (left + tooltipWidth > screenWidth - boundaryMargin) {
       left = screenWidth - tooltipWidth - boundaryMargin;
-      // If still not enough space, adjust tooltip width
-      if (left < boundaryMargin) {
-        left = boundaryMargin;
-      }
     }
 
-    // Top boundary check
     if (top < boundaryMargin) {
-      // If it goes above, move to bottom - maintain allowOverlap setting
       if (tooltipPosition.includes('top')) {
         top = hole.y + hole.height + (allowOverlap ? -4 : 24);
       } else {
@@ -181,9 +215,7 @@ export const HighlightToolTip: React.FC<HighlightOverlayProps> = ({
       }
     }
 
-    // Bottom boundary check
     if (top + tooltipHeight > screenHeight - boundaryMargin) {
-      // If it goes below, move to top - maintain allowOverlap setting
       if (tooltipPosition.includes('bottom')) {
         top = hole.y - tooltipHeight - (allowOverlap ? -4 : 24);
       } else {
@@ -194,11 +226,17 @@ export const HighlightToolTip: React.FC<HighlightOverlayProps> = ({
     return {
       top: top + offsetY,
       left: left + offsetX,
-      maxWidth: tooltipWidth,
+      opacity: 1,
+      maxWidth: screenWidth * 0.9,
     };
   };
 
-  if (!hole) return null;
+  const isHoleLayoutInvalid =
+    !hole || [hole.x, hole.y, hole.width, hole.height].some(isNaN);
+
+  if (isHoleLayoutInvalid) {
+    return null;
+  }
 
   const tooltipStyle = getTooltipPosition();
 
@@ -256,10 +294,12 @@ export const HighlightToolTip: React.FC<HighlightOverlayProps> = ({
 
           {/* Tooltip */}
           <View
+            onLayout={onTooltipLayout}
             style={{
               position: 'absolute',
               top: tooltipStyle.top,
               left: tooltipStyle.left,
+              opacity: tooltipStyle.opacity,
               maxWidth: tooltipStyle.maxWidth,
             }}
           >
