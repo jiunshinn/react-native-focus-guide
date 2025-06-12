@@ -52,57 +52,28 @@ export const HighlightToolTip: React.FC<HighlightOverlayProps> = ({
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
   useEffect(() => {
-    const measure = (retryCount = 0) => {
-      if (!targetRef.current) {
-        if (retryCount < 5) {
-          setTimeout(() => measure(retryCount + 1), 100);
-        }
-        return;
-      }
-      const handle = findNodeHandle(targetRef.current);
-      if (handle) {
-        UIManager.measureInWindow(handle, (x, y, width, height) => {
-          if (
-            [x, y, width, height].some(
-              (val) => typeof val !== 'number' || isNaN(val)
-            ) ||
-            (width === 0 && height === 0)
-          ) {
-            if (retryCount < 5) {
-              setTimeout(() => measure(retryCount + 1), 100);
-            } else {
-              console.warn(
-                'HighlightToolTip: Failed to measure target component after multiple retries.'
-              );
-              onRequestClose();
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (targetRef.current) {
+        const handle = findNodeHandle(targetRef.current);
+        if (handle) {
+          UIManager.measureInWindow(
+            handle,
+            (x: number, y: number, width: number, height: number) => {
+              const isAndroid = Platform.OS === 'android';
+              setHole({
+                x,
+                y: isAndroid ? y + androidOffsetY : y,
+                width,
+                height,
+              });
             }
-            return;
-          }
-
-          const isAndroid = Platform.OS === 'android';
-          setHole({
-            x,
-            y: isAndroid ? y + androidOffsetY : y,
-            width,
-            height,
-          });
-        });
-      } else if (retryCount < 5) {
-        setTimeout(() => measure(retryCount + 1), 100);
-      } else {
-        console.warn(
-          'HighlightToolTip: Could not find node handle for targetRef after multiple retries.'
-        );
-        onRequestClose();
+          );
+        }
       }
-    };
-
-    const interactionHandle = InteractionManager.runAfterInteractions(() => {
-      measure();
     });
 
-    return () => interactionHandle.cancel();
-  }, [targetRef, androidOffsetY, onRequestClose]);
+    return () => task.cancel();
+  }, [targetRef, androidOffsetY]);
 
   const onTooltipLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
