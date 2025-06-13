@@ -8,7 +8,6 @@ import {
   type LayoutRectangle,
   Dimensions,
   Platform,
-  InteractionManager,
 } from 'react-native';
 
 type TooltipPosition =
@@ -47,37 +46,20 @@ export const HighlightToolTip: React.FC<HighlightOverlayProps> = ({
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
   useEffect(() => {
-    const task = InteractionManager.runAfterInteractions(() => {
-      if (!targetRef.current) {
-        return;
+    if (!targetRef.current) return;
+    const handle = findNodeHandle(targetRef.current);
+    UIManager.measureInWindow(
+      handle!,
+      (x: number, y: number, width: number, height: number) => {
+        const isAndroid = Platform.OS === 'android';
+        setHole({
+          x,
+          y: isAndroid ? y + androidOffsetY : y,
+          width,
+          height,
+        });
       }
-      const handle = findNodeHandle(targetRef.current);
-      if (handle) {
-        UIManager.measureInWindow(
-          handle,
-          (x: number, y: number, width: number, height: number) => {
-            if ([x, y, width, height].some((val) => isNaN(val))) {
-              console.warn(
-                'HighlightToolTip: Failed to measure target component.'
-              );
-              return;
-            }
-
-            const isAndroid = Platform.OS === 'android';
-            setHole({
-              x,
-              y: isAndroid ? y + androidOffsetY : y,
-              width,
-              height,
-            });
-          }
-        );
-      }
-    });
-
-    return () => {
-      task.cancel();
-    };
+    );
   }, [targetRef, androidOffsetY]);
 
   const getTooltipPosition = () => {
