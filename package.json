@@ -1,6 +1,6 @@
 {
   "name": "react-native-focus-guide",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "A React Native library that provides an elegant way to create interactive focus guides and tooltips. It allows you to highlight specific components and display tooltips with smooth animations, perfect for creating onboarding experiences, feature walkthroughs, and interactive tutorials in your React Native applications.",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
